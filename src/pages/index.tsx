@@ -94,7 +94,8 @@ export default function Home() {
         `/weather?lat=${latitude}&lon=${longitude}
         &loc=${locations[0].name}
         &pop=${locations[0].population}
-        &country=${locations[0].country}`
+        &country=${locations[0].country}
+        &timezone=${locations[0].timezone}`
       );
     }
   };
