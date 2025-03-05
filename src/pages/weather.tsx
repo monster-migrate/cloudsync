@@ -17,6 +17,7 @@ import { LuRadiation } from "react-icons/lu";
 import { GiSunrise, GiSunset } from "react-icons/gi";
 import { classifyTrend } from "@/lib/classifyTrendData";
 import { getWeatherDescription } from "@/lib/getWeatherType";
+import WeatherGraph from "@/components/WeatherCharts/component";
 
 const robotoCondensed = Roboto_Condensed({
   subsets: ["latin"],
@@ -110,7 +111,7 @@ const WeatherPage: NextPage = (
   return (
     <div
       className={cn(
-        `p-2 h-screen-minus-logo text-white flex flex-col justify-start items-center`,
+        `p-2 h-screen-minus-logo max-h-auto overflow-auto text-white flex flex-col justify-start items-center`,
         robotoCondensed.className
       )}
       style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.4)" }}
@@ -273,6 +274,13 @@ const WeatherPage: NextPage = (
             </div>
           );
         })}
+      </div>
+      <div>
+        <WeatherGraph
+          weatherCode={initialData.current.weather_code}
+          data={initialData.hourly}
+          timezone={locationProps.timezone}
+        />
       </div>
     </div>
   );
