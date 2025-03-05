@@ -9,21 +9,19 @@ import { ParsedUrlQuery } from "querystring";
 import { WeatherDetailType } from "@/lib/types/WeatherDetailType";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-
-import { IoPartlySunny, IoSunnyOutline } from "react-icons/io5";
-import { WiDayFog, WiMoonAltFirstQuarter } from "react-icons/wi";
-
+import { IoSunnyOutline } from "react-icons/io5";
+import { WiBarometer, WiHumidity, WiMoonAltFirstQuarter } from "react-icons/wi";
 import { Roboto_Condensed } from "next/font/google";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
+import WeatherIcon from "@/components/WeatherIcon/component";
+import { FaCloud, FaWind } from "react-icons/fa";
+import { LuRadiation } from "react-icons/lu";
+import { GiSunrise, GiSunset } from "react-icons/gi";
 import { AQIDetails } from "@/lib/types/AirQualityType";
 import { classifyTrend } from "@/lib/classifyTrendData";
 import { getWeatherDescription } from "@/lib/getWeatherType";
-import { IoIosSunny } from "react-icons/io";
-import WeatherIcon from "@/components/WeatherIcon/component";
-import { FaWind } from "react-icons/fa";
-import { LuRadiation } from "react-icons/lu";
-import { GiSunrise, GiSunset } from "react-icons/gi";
+import { Separator } from "@/components/ui/separator";
+
 const robotoCondensed = Roboto_Condensed({
   subsets: ["latin"],
   weight: "300",
@@ -32,42 +30,34 @@ const robotoCondensed = Roboto_Condensed({
 const WeatherPage: NextPage = (
   props: InferGetServerSidePropsType<typeof getServerSideProps>
 ) => {
-  const [latitude, setLatitude] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [weatherData, setWeatherData] = useState(props.initialData);
-  const [airQualityData, setAirQualityData] = useState(props.airQualityData);
-  const [timestamp, setTimestamp] = useState("");
-  const [sunsetCountdown, setSunsetCountdown] = useState("");
-  const [sunriseCountdown, setSunriseCountdown] = useState("");
-  const [location, setLocation] = useState(props.locationProps);
-  const [error, setError] = useState(props.initialError);
-  const formatTimeFromEpoch = (time: any): any => {
-    const date = new Date(time * 1000);
-    const hours = date.getUTCHours();
-    const minutes = date.getUTCMinutes();
-    const seconds = date.getUTCSeconds();
-    // Format to hh:mm:ss
-    return [
-      String(hours).padStart(2, "0"),
-      String(minutes).padStart(2, "0"),
-      String(seconds).padStart(2, "0"),
-    ].join(":");
-  };
+  const { initialData, airQualityData, locationProps, initialError } = props;
+
+  const [timestamp, setTimestamp] = useState<string | null>(null);
+  const [parsedTimestamp, setParsedTimestamp] = useState<Date | null>(null);
+  const [sunsetCountdown, setSunsetCountdown] = useState<string | null>(null);
+  const [sunriseCountdown, setSunriseCountdown] = useState<string | null>(null);
+
   function getWindDirection(angle: number): string {
-    if (angle >= 337.5 || angle < 22.5) return "North";
-    if (angle >= 22.5 && angle < 67.5) return "North East";
-    if (angle >= 67.5 && angle < 112.5) return "East";
-    if (angle >= 112.5 && angle < 157.5) return "South East";
-    if (angle >= 157.5 && angle < 202.5) return "South";
-    if (angle >= 202.5 && angle < 247.5) return "SouthWest";
-    if (angle >= 247.5 && angle < 292.5) return "West";
-    if (angle >= 292.5 && angle < 337.5) return "North West";
-    return "Unknown direction";
+    const directions = [
+      "North",
+      "North East",
+      "East",
+      "South East",
+      "South",
+      "SouthWest",
+      "West",
+      "North West",
+    ];
+    return directions[Math.round(angle / 45) % 8] || "Unknown direction";
   }
+
   useEffect(() => {
+    if (!initialData || !locationProps) return;
+
+    // Client-side timestamp to fix hydration mismatch
     setTimestamp(
-      new Date(Date.now()).toLocaleString("en-IN", {
-        timeZone: location.timezone,
+      new Date().toLocaleString("en-IN", {
+        timeZone: locationProps.timezone,
         hour: "2-digit",
         minute: "2-digit",
         year: "numeric",
@@ -75,55 +65,76 @@ const WeatherPage: NextPage = (
         day: "2-digit",
         weekday: "long",
       })
-    ); // Update the timestamp after the component has mounted
-    const current_time = new Date(weatherData.current.time);
-    const sunset_time = new Date(weatherData.daily.sunset[0]);
-    const sunrise_time = new Date(weatherData.daily.sunrise[0]);
-    const sunset_timeDiff = sunset_time.getTime() - current_time.getTime();
-    const sunrise_timeDiff = sunrise_time.getTime() - current_time.getTime();
-    const sunset_hours = Math.floor(sunset_timeDiff / (1000 * 60 * 60));
-    const sunset_minutes = Math.floor(
-      (sunset_timeDiff % (1000 * 60 * 60)) / (1000 * 60)
     );
-    const sunrise_hours = Math.floor(sunrise_timeDiff / (1000 * 60 * 60));
-    const sunrise_minutes = Math.floor(
-      (sunrise_timeDiff % (1000 * 60 * 60)) / (1000 * 60)
+    const parsedDate = new Date();
+    const timeZoneOffset = new Date().getTimezoneOffset(); // Local system offset in minutes
+    const formatter = new Intl.DateTimeFormat("en-IN", {
+      timeZone: locationProps.timezone,
+      timeZoneName: "short",
+    });
+    const parts = formatter.formatToParts(parsedDate);
+    const timeZonePart = parts.find((part) => part.type === "timeZoneName");
+
+    if (timeZonePart) {
+      // Extract timezone offset in hours (e.g., "GMT+5:30" -> 5.5 hours)
+      const match = timeZonePart.value.match(/GMT([+-]\d+):?(\d+)?/);
+      if (match) {
+        const hours = parseInt(match[1], 10);
+        const minutes = match[2] ? parseInt(match[2], 10) : 0;
+        const targetOffsetMinutes = hours * 60 + minutes;
+        const adjustedDate = new Date(
+          parsedDate.getTime() + (targetOffsetMinutes - timeZoneOffset) * 60000
+        );
+        setParsedTimestamp(adjustedDate);
+      }
+    }
+    // Calculate sunset/sunrise countdown
+    const current_time = new Date(initialData.current.time);
+    const sunset_time = new Date(initialData.daily.sunset[0]);
+    const sunrise_time = new Date(initialData.daily.sunrise[0]);
+
+    const formatCountdown = (diff: number) => {
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      return `${hours} hours and ${minutes} minutes`;
+    };
+
+    setSunsetCountdown(
+      formatCountdown(sunset_time.getTime() - current_time.getTime())
     );
-    setSunsetCountdown(`${sunset_hours} hours and ${sunset_minutes} minutes`);
     setSunriseCountdown(
-      `${sunrise_hours} hours and ${sunrise_minutes} minutes`
+      formatCountdown(sunrise_time.getTime() - current_time.getTime())
     );
-  }, []);
+  }, [initialData, locationProps]);
+
+  if (initialError) {
+    return <div className="text-red-500 p-4">{initialError}</div>;
+  }
+
   return (
     <div
       className={cn(
         `p-2 h-screen-minus-logo text-white flex flex-col justify-start items-center`,
         robotoCondensed.className
       )}
-      style={{
-        textShadow: "1px 1px 2px rgba(0,0,0,0.4)",
-      }}
+      style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.4)" }}
     >
       <div className="w-screen-minus-offset p-2 flex justify-center">
         <p>
-          {location.location},&nbsp; {location.country}
+          {locationProps.location}, {locationProps.country}
           <br />
-          {timestamp}
+          {timestamp || "Loading time..."}
         </p>
         <div>
-          {weatherData.current.is_day ? (
+          {initialData.current.is_day ? (
             <IoSunnyOutline size={40} />
           ) : (
             <WiMoonAltFirstQuarter size={40} />
           )}
         </div>
       </div>
-      <div
-        className={cn(
-          `w-screen-minus-offset p-2 flex flex-col justify-start items-start`,
-          `sm:flex-row sm:items-center sm:gap-4`
-        )}
-      >
+
+      <div className="w-screen-minus-offset p-2 flex flex-col sm:flex-row sm:items-center sm:gap-4">
         <p>
           AQI: {airQualityData.current.us_aqi} and is{" "}
           {classifyTrend(
@@ -137,70 +148,135 @@ const WeatherPage: NextPage = (
             airQualityData.current.dust
           )}
           <br />
-          PM <sub>2.5</sub> : {airQualityData.current.pm2_5} μg/m³
+          PM <sub>2.5</sub>: {airQualityData.current.pm2_5} μg/m³
         </p>
-        <div className="flex flex-col justify-end items-end">
+
+        <div className="flex flex-col items-start">
           <p className="text-4xl">
-            {getWeatherDescription(weatherData.current.weather_code)}
+            {getWeatherDescription(initialData.current.weather_code)}
           </p>
-          <div className="flex flex-col justify-start items-start">
-            <p className="text-gray-200 text-xs">Temperature</p>
-            <br />
-            <div className="flex justify-start items-center gap-4">
+          <br />
+          <div className="flex flex-col sm:flex-row justify-start items-center gap-4">
+            <div className="flex items-center justify-center">
+              <div>
+                <WeatherIcon
+                  weatherCode={initialData.current.weather_code}
+                  is_day={initialData.current.is_day}
+                  size={100}
+                />
+              </div>
               <p className="text-4xl">
+                <span className="text-sm">Temperature</span>
+                <br />
                 <span className="text-8xl">
-                  {weatherData.current.temperature_2m}°
+                  {initialData.current.temperature_2m}°
                 </span>
                 C
               </p>
-              <div>
-                <WeatherIcon weatherCode={weatherData.current.weather_code} />
+            </div>
+
+            <div className="flex flex-col">
+              <div className="flex items-center gap-4">
+                <FaWind size={40} />
+                <p>
+                  Wind is blowing at {initialData.current.wind_speed_10m} km/h
+                  towards{" "}
+                  {getWindDirection(initialData.current.wind_direction_10m)}
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <LuRadiation size={40} />
+                <p>
+                  UV Index is at {initialData.daily.uv_index_max[0]} and is{" "}
+                  {classifyTrend(
+                    initialData.daily.uv_index_max,
+                    initialData.daily.uv_index_max[0]
+                  )}
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                {initialData.current.is_day ? (
+                  <GiSunset size={40} />
+                ) : (
+                  <GiSunrise size={40} />
+                )}
+                <p>
+                  {initialData.current.is_day
+                    ? sunsetCountdown
+                    : sunriseCountdown}{" "}
+                  till {initialData.current.is_day ? "sunset" : "sunrise"}.
+                </p>
               </div>
             </div>
-            <br />
-            <p className="text-gray-200 text-xs">
-              Feels Like <br />
-              <span className="text-4xl text-white">
-                {weatherData.current.apparent_temperature}°C
-              </span>
-            </p>
-            <p>
-              max/min
-              <br />
+          </div>
+          <br />
+          <div className="flex flex-row justify-center items-center gap-4 w-full">
+            <p className="text-gray-100 text-sm">
               <span>
-                {weatherData.daily.temperature_2m_max[0]} °C /{" "}
-                {weatherData.daily.temperature_2m_min[0]} °C
+                Feels Like <br />
+                <span className="text-md text-white">
+                  {initialData.current.apparent_temperature}°C
+                </span>
               </span>
             </p>
+            {/* <hr className="border-1 h-[40px] border-gray-300" /> */}
+            <p>
+              <span>
+                max/min:
+                <br />
+                <span className="text-md ">
+                  {initialData.daily.temperature_2m_max[0]}°C /{" "}
+                  {initialData.daily.temperature_2m_min[0]}°C
+                </span>
+              </span>
+            </p>
+            <div className="flex flex-col justify-center items-center">
+              <FaCloud size={32} />
+              <p className="text-[8px] sm:text-xs">Cloud Cover</p>
+              {initialData.current.cloud_cover}
+            </div>
+            <div className="flex flex-col justify-center items-center">
+              <WiHumidity size={32} />
+              <p className="text-[8px] sm:text-xs">Humidity</p>
+              {initialData.current.relative_humidity_2m}
+            </div>
+            <div className="flex flex-col justify-center items-center">
+              <WiBarometer size={32} />
+              <p className="text-[8px] sm:text-xs">Pressure</p>
+              {initialData.current.pressure_msl}
+            </div>
           </div>
         </div>
-        <div className="flex flex-col justify-start items-start">
-          <div className="flex justify-start items-center gap-4">
-            <FaWind size={40} />
-            <p>
-              Wind is blowing at {weatherData.current.wind_speed_10m} km/h
-              towards {getWindDirection(weatherData.current.wind_direction_10m)}
-            </p>
-          </div>
-          <div className="flex justify-start items-center gap-4">
-            <LuRadiation size={40} />
-            <p>
-              UV Index is at {weatherData.daily.uv_index_max[0]} and is{" "}
-              {classifyTrend(
-                weatherData.daily.uv_index_max,
-                weatherData.daily.uv_index_max[0]
-              )}
-            </p>
-          </div>
-          <div className="flex justify-start items-center gap-4">
-            {weatherData.current.is_day?<GiSunset size={40} />:
-            <GiSunrise size={40} />}
-            <p>
-              {weatherData.current.is_day ? sunsetCountdown : sunriseCountdown}{" "}
-              till {weatherData.current.is_day ? "sunset." : "sunrise."}.
-            </p>
-          </div>
-        </div>
+      </div>
+      <div className="flex gap-2">
+        {Array.from({ length: 8 }).map((_, i) => {
+          const totalHours = initialData.hourly.time.length;
+          const currentTime = parsedTimestamp || new Date();
+          const currentIndex = initialData.hourly.time.findIndex(
+            (t: string) => new Date(t).getHours() >= currentTime.getHours()
+          );
+          const validIndex = currentIndex === -1 ? 0 : currentIndex;
+          const nextIndex = (validIndex + i) % totalHours;
+
+          return (
+            <div key={i}>
+              <p>{initialData.hourly.temperature_2m[nextIndex]} °C</p>
+              <WeatherIcon
+                is_day={initialData.current.is_day}
+                weatherCode={initialData.hourly.weather_code[nextIndex]}
+                size={32}
+              />
+              <p>
+                {new Date(
+                  initialData.hourly.time[nextIndex]
+                ).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -210,48 +286,36 @@ export const getServerSideProps: GetServerSideProps = async (
   context: GetServerSidePropsContext<ParsedUrlQuery, PreviewData>
 ) => {
   const { lat, lon, loc, pop, country, timezone } = context.query;
-  let initialData: WeatherDetailType | null = null;
-  let airQualityData: AQIDetails | null = null;
-  let initialError: string | null = null;
-  if (lat && lon) {
-    try {
-      const weather_response = await fetch(
-        `http://localhost:3000/api/weather/weatherdetail?lat=${lat}&lon=${lon}`
-      );
-      const data = await weather_response.json();
-      if (weather_response.ok) {
-        initialData = data;
-      } else {
-        initialError = data.error;
-      }
-    } catch (err) {
-      initialError = "Failed to fetch data.";
-    }
-    try {
-      const airquality_response = await fetch(
-        `http://localhost:3000/api/airquality/aqi?lat=${lat}&lon=${lon}`
-      );
-      const air_data = await airquality_response.json();
-      if (airquality_response.ok) {
-        airQualityData = air_data;
-      } else {
-        initialError = air_data.error;
-      }
-    } catch (err) {
-      initialError = "Failed to fetch data.";
-    }
-  } else {
-    initialError = "Latitude and longitude are required.";
+
+  if (!lat || !lon) {
+    return { props: { initialError: "Latitude and longitude are required." } };
   }
-  const locationProps = {
-    location: loc || "",
-    population: pop || "",
-    country: country || "",
-    timezone: timezone || "",
-  };
-  return {
-    props: { initialData, airQualityData, initialError, locationProps },
-  };
+
+  try {
+    const [weatherResponse, airQualityResponse] = await Promise.all([
+      fetch(
+        `http://localhost:3000/api/weather/weatherdetail?lat=${lat}&lon=${lon}`
+      ).then((res) => res.json()),
+      fetch(
+        `http://localhost:3000/api/airquality/aqi?lat=${lat}&lon=${lon}`
+      ).then((res) => res.json()),
+    ]);
+
+    return {
+      props: {
+        initialData: weatherResponse,
+        airQualityData: airQualityResponse,
+        locationProps: {
+          location: loc || "",
+          population: pop || "",
+          country: country || "",
+          timezone: timezone || "",
+        },
+      },
+    };
+  } catch {
+    return { props: { initialError: "Failed to fetch data." } };
+  }
 };
 
 export default WeatherPage;
