@@ -1,7 +1,6 @@
 import { NextPage } from "next";
 import Image from "next/image";
 import { Roboto_Condensed } from "next/font/google";
-import { cn } from "@/lib/utils";
 const robotoCondensed = Roboto_Condensed({
   subsets: ["latin"],
   weight: ["300"],

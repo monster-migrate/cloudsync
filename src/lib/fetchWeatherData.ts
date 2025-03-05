@@ -56,17 +56,23 @@ export async function fetchWeatherData(
     const data = (await response.json()) as WeatherDetailType;
     // console.log(`API response data: ${JSON.stringify(data)}`);
     return data;
-  } catch (err: any) {
+  } catch (err: unknown) {
     const responseTime = Date.now() - start;
     console.error(
-      `Error fetching weather data: ${err}, Response time: ${responseTime}ms`
+      `Error fetching location data: ${err}, Response time: ${responseTime}ms`
     );
-    if (err.name === "AbortError") {
-      return { error: "Request timed out." };
-    } else if (err.name === "FetchError") {
-      return { error: "Network error or invalid response." };
-    } else {
-      return { error: "Internal Server Error." };
+
+    if (err instanceof Error) {
+      if (err.name === "AbortError") {
+        return { error: "Request timed out." };
+      } else if (err.name === "FetchError") {
+        return { error: "Network error or invalid response." };
+      } else {
+        return { error: "Internal Server Error." };
+      }
     }
+
+    // Handle non-Error cases (rare but possible)
+    return { error: "An unknown error occurred." };
   }
 }

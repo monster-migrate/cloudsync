@@ -44,7 +44,7 @@ export default function Home() {
       return;
     }
 
-    let debounce: NodeJS.Timeout;
+   
 
     const fetchLocations = async () => {
       setLoading(true);
@@ -74,8 +74,7 @@ export default function Home() {
       }
       setLoading(false);
     };
-
-    debounce = setTimeout(fetchLocations, 300);
+    const debounce: NodeJS.Timeout= setTimeout(fetchLocations, 300);
     return () => {
       clearTimeout(debounce);
       mobile_mediaQuery.removeEventListener(

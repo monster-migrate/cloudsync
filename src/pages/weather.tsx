@@ -6,9 +6,7 @@ import type {
   PreviewData,
 } from "next";
 import { ParsedUrlQuery } from "querystring";
-import { WeatherDetailType } from "@/lib/types/WeatherDetailType";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { IoSunnyOutline } from "react-icons/io5";
 import { WiBarometer, WiHumidity, WiMoonAltFirstQuarter } from "react-icons/wi";
 import { Roboto_Condensed } from "next/font/google";
@@ -17,10 +15,8 @@ import WeatherIcon from "@/components/WeatherIcon/component";
 import { FaCloud, FaWind } from "react-icons/fa";
 import { LuRadiation } from "react-icons/lu";
 import { GiSunrise, GiSunset } from "react-icons/gi";
-import { AQIDetails } from "@/lib/types/AirQualityType";
 import { classifyTrend } from "@/lib/classifyTrendData";
 import { getWeatherDescription } from "@/lib/getWeatherType";
-import { Separator } from "@/components/ui/separator";
 
 const robotoCondensed = Roboto_Condensed({
   subsets: ["latin"],
