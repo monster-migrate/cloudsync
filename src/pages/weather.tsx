@@ -290,10 +290,10 @@ export const getServerSideProps: GetServerSideProps = async (
   try {
     const [weatherResponse, airQualityResponse] = await Promise.all([
       fetch(
-        `http://localhost:3000/api/weather/weatherdetail?lat=${lat}&lon=${lon}`
+        `${process.env.DEPLOYMENT_URL_BASE}/api/weather/weatherdetail?lat=${lat}&lon=${lon}`
       ).then((res) => res.json()),
       fetch(
-        `http://localhost:3000/api/airquality/aqi?lat=${lat}&lon=${lon}`
+        `${process.env.DEPLOYMENT_URL_BASE}/api/airquality/aqi?lat=${lat}&lon=${lon}`
       ).then((res) => res.json()),
     ]);
 
