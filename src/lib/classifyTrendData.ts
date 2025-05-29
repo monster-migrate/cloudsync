@@ -2,11 +2,9 @@ export function classifyTrend(
   data: (number | null)[],
   initialValue: number
 ): string {
-  // Filter out null values
   const cleanedData = data.filter((value): value is number => value !== null);
   if (cleanedData.length < 2) return "Insufficient data";
 
-  // Compute linear regression (least squares method)
   const n = cleanedData.length;
   const x = [...Array(n).keys()]; // Time indices
   const y = cleanedData;
@@ -18,7 +16,6 @@ export function classifyTrend(
 
   const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
 
-  // Compute first differences (rate of change)
   const differences = y.slice(1).map((val, i) => val - y[i]);
   const avgChange =
     differences.reduce((acc, val) => acc + val, 0) / differences.length;
@@ -27,13 +24,11 @@ export function classifyTrend(
       differences.length
   );
 
-  // Compute fluctuations by counting sign changes
   let signChanges = 0;
   for (let i = 1; i < differences.length; i++) {
     if (differences[i] * differences[i - 1] < 0) signChanges++;
   }
 
-  // Classification Logic
   if (Math.abs(slope) < 0.1 && stdDev < 0.5)
     return `staying constant.`;
   if (slope > 0 && stdDev < 2)

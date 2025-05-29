@@ -41,7 +41,7 @@ const WeatherPage: NextPage = (
       "East",
       "South East",
       "South",
-      "SouthWest",
+      "South West",
       "West",
       "North West",
     ];

@@ -54,6 +54,20 @@ export async function fetchWeatherData(
     }
 
     const data = (await response.json()) as WeatherDetailType;
+    try {
+      const response = await fetch(`${process.env.DEPLOYMENT_URL_BASE}/api/insert`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ latitude: lat, longitude: lon, data }),
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const dbData = await response.json();
+      console.log(dbData);
+    } catch (err: unknown) {
+      console.error(err);
+    }
     // console.log(`API response data: ${JSON.stringify(data)}`);
     return data;
   } catch (err: unknown) {
@@ -72,7 +86,7 @@ export async function fetchWeatherData(
       }
     }
 
-    // Handle non-Error cases (rare but possible)
+    // handle non-Error cases
     return { error: "An unknown error occurred." };
   }
 }

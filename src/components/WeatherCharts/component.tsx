@@ -72,8 +72,7 @@ const WeatherGraph = ({
     timezone: string
   ) => {
     return hourlyData.time.map((t: string, index: number) => {
-      // Convert the UTC time to local time using the given timezone
-      const date = new Date(t + "Z"); // Ensure it's treated as UTC
+      const date = new Date(t + "Z");
       const localTime = new Intl.DateTimeFormat("en-IN", {
         timeZone: timezone,
         hour: "2-digit",
@@ -103,7 +102,6 @@ const WeatherGraph = ({
         {graphConfig.title}
       </h2>
 
-      {/* Loop through each key and render a separate LineChart */}
       {graphConfig.keys.map((key, index) => (
         <div key={key} className="mb-6">
           <h3 className="text-md font-medium text-gray-300">{key}</h3>

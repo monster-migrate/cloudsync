@@ -21,6 +21,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [locations, setLocations] = useState<LocationType[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [longitude, setLongitude] = useState(0);
   const [latitude, setLatitude] = useState(0);
   const [open, setOpen] = useState(false);
@@ -44,7 +45,7 @@ export default function Home() {
       return;
     }
 
-   
+
 
     const fetchLocations = async () => {
       setLoading(true);
@@ -74,7 +75,7 @@ export default function Home() {
       }
       setLoading(false);
     };
-    const debounce: NodeJS.Timeout= setTimeout(fetchLocations, 300);
+    const debounce: NodeJS.Timeout = setTimeout(fetchLocations, 300);
     return () => {
       clearTimeout(debounce);
       mobile_mediaQuery.removeEventListener(
@@ -89,6 +90,7 @@ export default function Home() {
   }, [query]);
   const handleSearch = () => {
     if (longitude !== 0 && latitude !== 0) {
+      setSearching(true);
       router.push(
         `/weather?lat=${latitude}&lon=${longitude}
         &loc=${locations[0].name}
@@ -170,6 +172,29 @@ export default function Home() {
           className="hover:opacity-88 cursor-pointer w-full h-[73.5px]"
         />
       </Button>
+      {searching && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          {/* Use shadcn Spinner or Skeleton */}
+          <div className="flex flex-col items-center">
+            <svg className="animate-spin h-14 w-14 text-white mb-4" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="white" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="white" d="M4 12a8 8 0 018-8v8z" />
+            </svg>
+            <span className="text-white text-xl font-semibold">Loading...</span>
+          </div>
+        </div>
+      )}
+      <div className="flex justify-center lg:justify-between  gap-2 items-center p-4 bg-blue-100 rounded-md absolute bottom-0">
+        <span className="font-semibold text-lg">Weather App by Debasish Raut</span>
+        <button
+          onClick={() => {
+            window.open("https://www.linkedin.com/school/pmaccelerator/posts/?feedView=all", "_blank")
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition cursor-pointer">
+          ℹ️ Info
+        </button>
+      </div>
+
     </div>
   );
 }
