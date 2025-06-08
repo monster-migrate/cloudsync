@@ -88,7 +88,10 @@ const WeatherPage: NextPage = (
     // Calculate sunset/sunrise countdown
     const current_time = new Date(initialData.current.time);
     const sunset_time = new Date(initialData.daily.sunset[0]);
-    const sunrise_time = new Date(initialData.daily.sunrise[0]);
+    let sunrise_time = new Date(initialData.daily.sunrise[0]);
+if (current_time > sunrise_time && initialData.daily.sunrise.length > 1) {
+  sunrise_time = new Date(initialData.daily.sunrise[1]); // Use next sunrise
+}
 
     const formatCountdown = (diff: number) => {
       const hours = Math.floor(diff / (1000 * 60 * 60));
